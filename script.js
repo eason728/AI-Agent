@@ -1,154 +1,137 @@
-// game.js
-
+// script.js
 document.addEventListener("DOMContentLoaded", () => {
   const canvas = document.getElementById("gameCanvas");
   const ctx = canvas.getContext("2d");
   const WIDTH = canvas.width;
   const HEIGHT = canvas.height;
 
-  // Colors
-  const WHITE = "#fff";
-  const BLUE = "#00f";
-  const RED = "#f00";
-  const BLACK = "#000";
+  const WHITE = "#fff", BLUE = "#00f", RED = "#f00", BLACK = "#000";
+  const PLAYER_WIDTH = 40, PLAYER_HEIGHT = 40;
+  const gravity = 1, jumpStrength = -15, obstacleSpeedStart = 5;
 
-  // Frame rate (Not strictly needed with requestAnimationFrame)
-  const FPS = 60;
-
-  // Player properties
-  const PLAYER_WIDTH = 40;
-  const PLAYER_HEIGHT = 40;
-  const playerX = 100; // Constant horizontal position
-  let playerY = HEIGHT - PLAYER_HEIGHT - 10; // starting vertical
-  let playerVelY = 0;
-  const gravity = 1;
-  const jumpStrength = -15;
-  let isJumping = false;
-  
-  // Ground position
+  let playerX = 100, playerY = HEIGHT - PLAYER_HEIGHT - 10;
+  let playerVelY = 0, isJumping = false, jumpCount = 0, doubleJump = true;
   const groundY = HEIGHT - 10;
-  
-  // Obstacle properties
-  const OBSTACLE_WIDTH = 40;
-  const OBSTACLE_HEIGHT = 40;
-  const obstacleSpeed = 5;
-  let obstacles = [];
-  let spawnTimer = 0;
-  
-  // Score
-  let score = 0;
-  
-  // Game state
-  let gameRunning = true;
-  
-  // Handle keyboard input
+  let obstacles = [], spawnTimer = 0, obstacleSpeed = obstacleSpeedStart;
+  let score = 0, highScore = localStorage.getItem("highScore") || 0;
+  let gameRunning = false;
+
+  const overlay = document.getElementById("gameOverlay");
+  const message = document.getElementById("gameMessage");
+  const scoreDisplay = document.getElementById("scoreDisplay");
+
   document.addEventListener("keydown", (e) => {
-    if (e.code === "Space" && !isJumping) {
-      playerVelY = jumpStrength;
-      isJumping = true;
+    if (e.code === "Space") {
+      if (!isJumping || (doubleJump && jumpCount < 2)) {
+        playerVelY = jumpStrength;
+        isJumping = true;
+        jumpCount++;
+      }
     }
+    if (e.code === "KeyR" && !gameRunning) startGame();
+    if (e.code === "KeyE" && !gameRunning) window.location.reload();
   });
-  
-  // Collision detection: check if two rectangles intersect.
-  function rectIntersect(r1, r2) {
-    return !(
-      r2.x > r1.x + r1.width ||
-      r2.x + r2.width < r1.x ||
-      r2.y > r1.y + r1.height ||
-      r2.y + r2.height < r1.y
-    );
+
+  function startGame() {
+    overlay.classList.add("hidden");
+    playerY = HEIGHT - PLAYER_HEIGHT - 10;
+    playerVelY = 0;
+    isJumping = false;
+    jumpCount = 0;
+    obstacles = [];
+    spawnTimer = 0;
+    score = 0;
+    obstacleSpeed = obstacleSpeedStart;
+    gameRunning = true;
+    gameLoop();
   }
-  
-  // Draw the player
+
+  function rectIntersect(r1, r2) {
+    return !(r2.x > r1.x + r1.width || r2.x + r2.width < r1.x || r2.y > r1.y + r1.height || r2.y + r2.height < r1.y);
+  }
+
   function drawPlayer(x, y) {
     ctx.fillStyle = BLUE;
     ctx.fillRect(x, y, PLAYER_WIDTH, PLAYER_HEIGHT);
   }
-  
-  // Draw obstacles
+
   function drawObstacles(obstacles) {
     ctx.fillStyle = RED;
-    obstacles.forEach(obstacle => {
-      ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+    obstacles.forEach(ob => {
+      ctx.fillRect(ob.x, ob.y, ob.width, ob.height);
     });
   }
-  
-  // Display the score
+
   function displayScore(score) {
     ctx.fillStyle = WHITE;
     ctx.font = "20px Arial";
     ctx.fillText("Score: " + score, 10, 30);
+    ctx.fillText("High Score: " + highScore, 10, 60);
   }
-  
-  // Main game loop using requestAnimationFrame
+
+  function showGameOver() {
+    gameRunning = false;
+    overlay.classList.remove("hidden");
+    message.textContent = "Game Over!";
+    scoreDisplay.textContent = `Your Score: ${score} | High Score: ${highScore}`;
+    if (score > highScore) {
+      localStorage.setItem("highScore", score);
+      highScore = score;
+    }
+  }
+
   function gameLoop() {
-    if (!gameRunning) return; // stop game on collision
-    
-    // Clear the canvas
+    if (!gameRunning) return;
     ctx.clearRect(0, 0, WIDTH, HEIGHT);
     ctx.fillStyle = BLACK;
     ctx.fillRect(0, 0, WIDTH, HEIGHT);
-    
-    // Update player mechanics
+
     playerVelY += gravity;
     playerY += playerVelY;
-    
-    // Check if player lands on the ground
+
     if (playerY + PLAYER_HEIGHT >= groundY) {
       playerY = groundY - PLAYER_HEIGHT;
       isJumping = false;
+      jumpCount = 0;
       playerVelY = 0;
     }
-    
-    // Spawn obstacles every 60 frames (~1 second at 60 FPS)
+
     spawnTimer++;
     if (spawnTimer > 60) {
-      const obstacleX = WIDTH;
-      const obstacleY = groundY - OBSTACLE_HEIGHT;
-      obstacles.push({ 
-        x: obstacleX, 
-        y: obstacleY, 
-        width: OBSTACLE_WIDTH, 
-        height: OBSTACLE_HEIGHT 
+      let heightOffset = Math.random() * 20;
+      obstacles.push({
+        x: WIDTH,
+        y: groundY - 40 - heightOffset,
+        width: 40,
+        height: 40 + heightOffset
       });
       spawnTimer = 0;
     }
-    
-    // Update obstacles: move left and check if they go off-screen
+
     for (let i = obstacles.length - 1; i >= 0; i--) {
       obstacles[i].x -= obstacleSpeed;
-      if (obstacles[i].x + OBSTACLE_WIDTH < 0) {
+      if (obstacles[i].x + obstacles[i].width < 0) {
         obstacles.splice(i, 1);
-        score++; // Increase score when an obstacle is passed
+        score++;
+        if (score % 10 === 0) obstacleSpeed += 0.5;
       }
     }
-    
-    // Create player's rectangle for collision detection.
+
     const playerRect = { x: playerX, y: playerY, width: PLAYER_WIDTH, height: PLAYER_HEIGHT };
-    
-    // Check collisions between the player and obstacles.
-    for (let obstacle of obstacles) {
-      if (rectIntersect(playerRect, obstacle)) {
-        console.log("Game Over!");
-        gameRunning = false;
-        // Optionally, you can show a Game Over message here.
-        ctx.fillStyle = WHITE;
-        ctx.font = "40px Arial";
-        const msg = "Game Over!";
-        ctx.fillText(msg, WIDTH / 2 - ctx.measureText(msg).width / 2, HEIGHT / 2);
+    for (let ob of obstacles) {
+      if (rectIntersect(playerRect, ob)) {
+        showGameOver();
         return;
       }
     }
-    
-    // Draw player, obstacles, and score.
+
     drawPlayer(playerX, playerY);
     drawObstacles(obstacles);
     displayScore(score);
-    
-    // Loop the game using requestAnimationFrame.
     requestAnimationFrame(gameLoop);
   }
-  
-  // Start the game loop.
-  gameLoop();
+
+  // Initial overlay
+  message.textContent = "Press Space to Jump";
+  scoreDisplay.textContent = "Press 'R' to Start";
 });
