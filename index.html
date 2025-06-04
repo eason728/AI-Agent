@@ -2,11 +2,19 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Geometry Dash - HTML Version</title>
+  <title>Geometry Dash - Enhanced</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <canvas id="gameCanvas" width="800" height="400"></canvas>
+
+  <!-- Overlay for Game Over and Info -->
+  <div id="gameOverlay" class="hidden">
+    <h1 id="gameMessage"></h1>
+    <p id="scoreDisplay"></p>
+    <p>Press 'R' to Restart or 'E' to Exit</p>
+  </div>
+
   <script src="script.js"></script>
 </body>
 </html>
