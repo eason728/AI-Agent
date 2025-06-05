@@ -16,7 +16,7 @@ canvas {
   border: 2px solid #fff;
 }
 
-/* Overlay shown after game over */
+/* Overlay shown after game over or before game starts */
 #gameOverlay {
   position: absolute;
   top: 0;
@@ -44,4 +44,18 @@ canvas {
 
 #gameOverlay p {
   margin: 5px 0;
+}
+
+/* Player count dropdown */
+#playerCountSelect {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  font-size: 16px;
+  padding: 5px;
+  z-index: 20;
+  background-color: #222;
+  color: white;
+  border: 1px solid #555;
+  border-radius: 4px;
 }
