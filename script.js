@@ -62,6 +62,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function startGame() {
     overlay.classList.add("hidden");
+    message.textContent = "";
+    scoreDisplay.textContent = "";
     playerCountSelect.style.display = "none";
     players = Array.from({ length: playerCount }, (_, i) => createPlayer(100 + i * 60));
     obstacles = [];
